@@ -100,3 +100,5 @@ jobs:
           name: Kernel-${{ github.event.inputs.developer }}
           path: |
             AnyKernel3/*.zip
+            out/arch/arm64/boot/Image*
+            out/arch/arm64/boot/dtbo.img
