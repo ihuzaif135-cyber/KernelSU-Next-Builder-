@@ -74,7 +74,7 @@ jobs:
                 CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-"
           cd kernel-source
           make ${args} ${{ github.event.inputs.defconfig }}
-          make -j$(nproc) ${args} KCFLAGS="-Wno-unused-but-set-variable -Wno-unused-variable -Wno-strict-prototypes"
+          make -j$(nproc) ${args} KCFLAGS="-w"
       - name: 📦 Package with AnyKernel3
         if: ${{ github.event.inputs.anykernel }}
         run: |
