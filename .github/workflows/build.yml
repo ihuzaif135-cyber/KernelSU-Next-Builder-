@@ -1,43 +1,42 @@
 name: Universal Kernel Builder + KernelSU-Next
-
 on:
   workflow_dispatch:
     inputs:
       kernel_source:
-        description: '🔗 URL kernel source'
+        description: ' URL kernel source'
         required: true
         default: 'https://github.com/lynxdevproject/kernel-begonia'
       kernel_branch:
-        description: '🌿 Branch kernel source'
+        description: ' Branch kernel source'
         required: true
         default: 'main'
       defconfig:
-        description: '🧪 Kernel defconfig'
+        description: ' Kernel defconfig'
         required: true
         default: 'begonia_user_defconfig'
       anykernel:
-        description: '📦 Use AnyKernel3 packaging?'
+        description: ' Use AnyKernel3 packaging?'
         required: true
         type: boolean
         default: true
       anykernel_repo:
-        description: '🌐 URL AnyKernel3 repo'
+        description: ' URL AnyKernel3 repo'
         required: false
         default: 'https://github.com/osm0sis/AnyKernel3.git'
       anykernel_branch:
-        description: '🌿 Branch of AnyKernel3'
+        description: ' Branch of AnyKernel3'
         required: false
         default: 'master'
       zip_name:
-        description: '📝 Output ZIP base name'
+        description: ' Output ZIP base name'
         required: false
         default: 'ReogKernelSU'
       developer:
-        description: '👤 Developer name/ID'
+        description: ' Developer name/ID'
         required: false
         default: 'lynx@workspace'
       enable_kernelsu_next:
-        description: '🔘 Enable KernelSU-Next patch?'
+        description: ' Enable KernelSU-Next patch?'
         required: true
         type: boolean
         default: false
@@ -48,35 +47,22 @@ jobs:
     env:
       TZ: Asia/Jakarta
       OUT_DIR: out
-
     steps:
       - name: 🧰 Setup Toolchain
         run: |
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s kernel-source
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 aarch64-linux-android-4.9
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 arm-linux-androideabi-4.9
           mkdir clang && curl -s https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android14-dev/clang-r487747c.tar.gz -RLO && tar -C clang/ -xf clang-*.tar.gz
-
       - name: ⏱️ Pull Kernel Source
         run: |
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s kernel-source
           git clone --depth=1 ${{ github.event.inputs.kernel_source }} -b ${{ github.event.inputs.kernel_branch }} kernel-source
-
-      - name: 🧙 Inject KernelSU
-
-
+      - name: 🧙 Inject KernelSU-Next
         if: ${{ github.event.inputs.enable_kernelsu_next }}
-
-
         run: |
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s kernel-source
-
-
-          curl -LSs https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh | bash -s kernel-source
-
+          git clone --depth=1 https://github.com/KernelSU-Next/KernelSU-Next.git KernelSU
+          bash KernelSU/tools/init_kernelsu.sh kernel-source
       - name: ⚙️ Build Kernel
         run: |
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s kernel-source
           export KBUILD_BUILD_USER="${{ github.event.inputs.developer }}"
           export KBUILD_BUILD_HOST="workspace"
           export PATH=$GITHUB_WORKSPACE/clang/bin:${PATH}
@@ -90,11 +76,9 @@ jobs:
           cd kernel-source
           make ${args} ${{ github.event.inputs.defconfig }}
           make -j$(nproc) ${args}
-
       - name: 📦 Package with AnyKernel3
         if: ${{ github.event.inputs.anykernel }}
         run: |
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s kernel-source
           git clone --depth=1 -b "${{ github.event.inputs.anykernel_branch }}" "${{ github.event.inputs.anykernel_repo }}" AnyKernel3
           rm -rf AnyKernel3/.git* AnyKernel3/LICENSE AnyKernel3/README.md
           IMG_PATH="out/arch/arm64/boot"
@@ -111,7 +95,6 @@ jobs:
           ZIP_NAME="${{ github.event.inputs.zip_name }}-${{ github.event.inputs.developer }}-${DATE}.zip"
           cd AnyKernel3
           zip -r "${ZIP_NAME}" *
-
       - name: ☁️ Upload Artifact
         uses: actions/upload-artifact@v4
         with:
